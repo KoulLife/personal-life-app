@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:18
+    container_name: db
+    restart: always
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Seoul
+    volumes:
+      - pg_data:/var/lib/postgresql
+      - ./init-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  pg_data:
