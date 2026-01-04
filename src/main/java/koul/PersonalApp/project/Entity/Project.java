@@ -34,12 +34,16 @@ public class Project {
 	@OneToMany(mappedBy = "prevProject", cascade = CascadeType.ALL)
 	private List<Project> nextProjects = new ArrayList<>();	// 다음(자손) 프로젝트
 
+	@ManyToOne @JoinColumn(name = "project_group_id")
+	private ProjectGroup projectGroup;	// 프로젝트 그룹
+
 	@Builder
-	public Project(String content, boolean completeStatus, Project prevProject, List<Project> nextProjects) {
+	public Project(String content, boolean completeStatus, Project prevProject, List<Project> nextProjects, ProjectGroup projectGroup) {
 		this.content = content;
 		this.completeStatus = completeStatus;
 		this.prevProject = prevProject;
 		this.nextProjects = nextProjects;
+		this.projectGroup = projectGroup;
 	}
 
 	/**
@@ -79,6 +83,20 @@ public class Project {
 	 */
 	public void changeCompleteStatus(boolean status) {
 		completeStatus = status;
+	}
+
+	/**
+	 * 프로젝트의 그룹 설정
+	 */
+	public void assignGroup(ProjectGroup group) {
+		this.projectGroup = group;
+	}
+
+	/**
+	 * 프로젝트의 그룹 설정
+	 */
+	public void initProjectGroup() {
+		this.projectGroup = null;
 	}
 
 }

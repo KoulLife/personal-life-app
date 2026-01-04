@@ -9,7 +9,9 @@ public record ProjectInfo(
 	boolean completeStatus,
 	boolean isRoot,
 	Long prevProjectId,       // 부모 ID만 전달
-	List<Long> nextProjectIds // 자식들의 ID 목록만 전달
+	List<Long> nextProjectIds, // 자식들의 ID 목록만 전달
+
+	Long projectGroupId
 ) {
 	// Entity -> DTO 변환 메서드 (Factory Method)
 	public static ProjectInfo from(Project project) {
@@ -22,13 +24,18 @@ public record ProjectInfo(
 			.map(Project::getProjectId)
 			.toList();
 
+		// 프로젝트 그룹 ID 추출
+		Long projectGroupId = (project.getProjectGroup() != null) ?
+			project.getProjectGroup().getProjectGroupId() : null;
+
 		return new ProjectInfo(
 			project.getProjectId(),
 			project.getContent(),
 			project.isCompleteStatus(),
 			project.isRootProject(),
 			prevId,
-			nextIds
+			nextIds,
+			projectGroupId
 		);
 	}
 }
