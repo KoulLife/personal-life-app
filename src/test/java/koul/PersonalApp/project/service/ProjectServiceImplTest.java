@@ -1,6 +1,7 @@
 package koul.PersonalApp.project.service;
 
 import koul.PersonalApp.project.Entity.Project;
+import koul.PersonalApp.project.Entity.ProjectGroup;
 import koul.PersonalApp.project.dto.ProjectCreateCommand;
 import koul.PersonalApp.project.repository.ProjectRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -154,7 +155,8 @@ class ProjectServiceImplTest {
 	@DisplayName("프로젝트 생성 - 정상 저장 후 ID 반환 확인")
 	void createProject_success() {
 		// given
-		ProjectCreateCommand request = new ProjectCreateCommand("새 프로젝트", false);
+		ProjectGroup projectGroup = new ProjectGroup();
+		ProjectCreateCommand request = new ProjectCreateCommand("새 프로젝트", false, projectGroup);
 		Project project = request.toEntity();
 
 		// Reflection을 사용해 가짜 ID 주입 (실제 DB 저장 효과 시뮬레이션)
