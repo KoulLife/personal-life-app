@@ -5,6 +5,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import koul.PersonalApp.global.security.CustomUserDetails;
 import koul.PersonalApp.user.entity.User;
 import koul.PersonalApp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +25,9 @@ public class UserDetailServiceImpl implements UserDetailsService {
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		User user = userRepository.findByUsername(username)
-			.orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+				.orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
 
-		// User 엔티티를 UserDetails 객체로 변환
-		return org.springframework.security.core.userdetails.User.builder()
-			.username(user.getUsername())
-			.password(user.getPassword())
-			.roles(user.getRole()) // "USER", "ADMIN"
-			.build();
+		// CustomUserDetails 객체로 반환
+		return new CustomUserDetails(user);
 	}
 }
