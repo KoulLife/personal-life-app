@@ -11,6 +11,7 @@ import koul.PersonalApp.global.security.JwtTokenProvider;
 import koul.PersonalApp.user.dto.LoginRequest;
 import koul.PersonalApp.user.dto.SignupRequest;
 import koul.PersonalApp.user.dto.TokenResponse;
+import koul.PersonalApp.user.entity.ServiceType;
 import koul.PersonalApp.user.entity.User;
 import koul.PersonalApp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -79,5 +80,27 @@ public class UserServiceImpl implements UserService {
         String accessToken = jwtTokenProvider.createToken(authentication.getName());
 
         return TokenResponse.of(accessToken);
+    }
+
+    /**
+     * 사용자 서비스 추가 구현
+     */
+    @Override
+    @Transactional
+    public void addService(Long userId, ServiceType serviceType) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다: " + userId));
+        user.addService(serviceType);
+    }
+
+    /**
+     * 사용자 서비스 제거 구현
+     */
+    @Override
+    @Transactional
+    public void removeService(Long userId, ServiceType serviceType) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다: " + userId));
+        user.getActiveServices().remove(serviceType);
     }
 }
