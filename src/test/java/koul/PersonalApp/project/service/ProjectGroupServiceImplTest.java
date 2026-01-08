@@ -2,6 +2,8 @@ package koul.PersonalApp.project.service;
 
 import koul.PersonalApp.project.Entity.Project;
 import koul.PersonalApp.project.Entity.ProjectGroup;
+
+import koul.PersonalApp.project.dto.ProjectGroupCreateCommand;
 import koul.PersonalApp.project.repository.ProjectGroupRepository;
 import koul.PersonalApp.project.repository.ProjectRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +13,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import koul.PersonalApp.user.entity.User;
+import koul.PersonalApp.user.repository.UserRepository;
+
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +35,9 @@ class ProjectGroupServiceImplTest {
 	@Mock
 	private ProjectRepository projectRepository;
 
+	@Mock
+	private UserRepository userRepository;
+
 	@InjectMocks
 	private ProjectGroupServiceImpl projectGroupService;
 
@@ -36,11 +45,20 @@ class ProjectGroupServiceImplTest {
 	@DisplayName("그룹 생성 - 정상적으로 생성되고 ID를 반환해야 한다")
 	void createGroup_success() {
 		// given
+		Long userId = 1L;
+		User user = User.builder().build(); // Assuming User has a builder or use new User() if not
+		given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
 		ProjectGroup savedGroup = new ProjectGroup();
 		given(projectGroupRepository.save(any(ProjectGroup.class))).willReturn(savedGroup);
 
+		ProjectGroupCreateCommand projectGroupCreateCommand = ProjectGroupCreateCommand.builder()
+				.groupName("group")
+				.startDate(LocalDateTime.now())
+				.build();
+
 		// when
-		projectGroupService.createGroup();
+		projectGroupService.createGroup(1L, projectGroupCreateCommand);
 
 		// then
 		// save 메서드가 1번 호출되었는지 검증
@@ -53,15 +71,17 @@ class ProjectGroupServiceImplTest {
 		// given
 		Long groupId = 1L;
 		Long projectId = 100L;
+		Long userId = 1L;
 
 		ProjectGroup group = new ProjectGroup();
 		Project project = Project.builder().content("테스트 프로젝트").build();
 
-		given(projectGroupRepository.findById(groupId)).willReturn(Optional.of(group));
+		given(projectGroupRepository.findByProjectGroupIdAndUser_UserId(groupId, userId))
+				.willReturn(Optional.of(group));
 		given(projectRepository.findById(projectId)).willReturn(Optional.of(project));
 
 		// when
-		projectGroupService.addProjectToGroup(groupId, projectId);
+		projectGroupService.addProjectToGroup(userId, groupId, projectId);
 
 		// then
 		// 그룹 리스트에 프로젝트가 추가되었는지 확인
@@ -76,13 +96,14 @@ class ProjectGroupServiceImplTest {
 		// given
 		Long invalidGroupId = 999L;
 		Long projectId = 100L;
+		Long userId = 1L;
 
-		given(projectGroupRepository.findById(invalidGroupId)).willReturn(Optional.empty());
+		given(projectGroupRepository.findByProjectGroupIdAndUser_UserId(invalidGroupId, userId))
+				.willReturn(Optional.empty());
 
 		// when & then
-		assertThrows(IllegalArgumentException.class, () ->
-			projectGroupService.addProjectToGroup(invalidGroupId, projectId)
-		);
+		assertThrows(IllegalArgumentException.class,
+				() -> projectGroupService.addProjectToGroup(userId, invalidGroupId, projectId));
 	}
 
 	@Test
@@ -91,6 +112,7 @@ class ProjectGroupServiceImplTest {
 		// given
 		Long groupId = 1L;
 		Long projectId = 100L;
+		Long userId = 1L;
 
 		ProjectGroup group = new ProjectGroup();
 		Project project = Project.builder().content("삭제할 프로젝트").build();
@@ -98,11 +120,12 @@ class ProjectGroupServiceImplTest {
 		// 미리 추가해둠
 		group.addProject(project);
 
-		given(projectGroupRepository.findById(groupId)).willReturn(Optional.of(group));
+		given(projectGroupRepository.findByProjectGroupIdAndUser_UserId(groupId, userId))
+				.willReturn(Optional.of(group));
 		given(projectRepository.findById(projectId)).willReturn(Optional.of(project));
 
 		// when
-		projectGroupService.removeProjectFromGroup(groupId, projectId);
+		projectGroupService.removeProjectFromGroup(userId, groupId, projectId);
 
 		// then
 		// 리스트에서 제거되었는지 확인
@@ -116,13 +139,17 @@ class ProjectGroupServiceImplTest {
 	void deleteGroup_success() {
 		// given
 		Long groupId = 1L;
-		given(projectGroupRepository.existsById(groupId)).willReturn(true);
+		Long userId = 1L;
+		ProjectGroup group = new ProjectGroup();
+
+		given(projectGroupRepository.findByProjectGroupIdAndUser_UserId(groupId, userId))
+				.willReturn(Optional.of(group));
 
 		// when
-		projectGroupService.deleteGroup(groupId);
+		projectGroupService.deleteGroup(userId, groupId);
 
 		// then
-		verify(projectGroupRepository, times(1)).deleteById(groupId);
+		verify(projectGroupRepository, times(1)).delete(group);
 	}
 
 	@Test
@@ -130,12 +157,14 @@ class ProjectGroupServiceImplTest {
 	void deleteGroup_fail_notFound() {
 		// given
 		Long invalidGroupId = 999L;
-		given(projectGroupRepository.existsById(invalidGroupId)).willReturn(false);
+		Long userId = 1L;
+
+		given(projectGroupRepository.findByProjectGroupIdAndUser_UserId(invalidGroupId, userId))
+				.willReturn(Optional.empty());
 
 		// when & then
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-			projectGroupService.deleteGroup(invalidGroupId)
-		);
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+				() -> projectGroupService.deleteGroup(userId, invalidGroupId));
 		assertThat(exception.getMessage()).contains("존재하지 않습니다");
 	}
 
@@ -144,6 +173,7 @@ class ProjectGroupServiceImplTest {
 	void getCompletedProjectCount_success() {
 		// given
 		Long groupId = 1L;
+		Long userId = 1L;
 		ProjectGroup group = new ProjectGroup();
 
 		// 완료된 프로젝트 2개, 미완료 1개 추가
@@ -151,10 +181,11 @@ class ProjectGroupServiceImplTest {
 		group.addProject(Project.builder().completeStatus(true).build());
 		group.addProject(Project.builder().completeStatus(false).build());
 
-		given(projectGroupRepository.findById(groupId)).willReturn(Optional.of(group));
+		given(projectGroupRepository.findByProjectGroupIdAndUser_UserId(groupId, userId))
+				.willReturn(Optional.of(group));
 
 		// when
-		long count = projectGroupService.getCompletedProjectCount(groupId);
+		long count = projectGroupService.getCompletedProjectCount(userId, groupId);
 
 		// then
 		assertThat(count).isEqualTo(2);
