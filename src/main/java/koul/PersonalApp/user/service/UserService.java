@@ -1,5 +1,7 @@
 package koul.PersonalApp.user.service;
 
+import java.util.Set;
+
 import koul.PersonalApp.user.dto.LoginRequest;
 import koul.PersonalApp.user.dto.SignupRequest;
 import koul.PersonalApp.user.dto.TokenResponse;
@@ -41,5 +43,13 @@ public interface UserService {
      * @param serviceType 제거할 서비스 타입
      */
     void removeService(Long userId, ServiceType serviceType);
+
+    /**
+     * 사용자의 활성 서비스 목록을 반환함
+     * 
+     * @param userId 사용자 ID
+     * @return 활성화된 서비스 타입 목록 (Set)
+     */
+    Set<ServiceType> getActiveServices(Long userId);
 
 }
