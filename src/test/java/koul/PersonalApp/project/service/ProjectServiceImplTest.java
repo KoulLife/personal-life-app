@@ -3,7 +3,10 @@ package koul.PersonalApp.project.service;
 import koul.PersonalApp.project.Entity.Project;
 import koul.PersonalApp.project.Entity.ProjectGroup;
 import koul.PersonalApp.project.dto.ProjectCreateCommand;
+import koul.PersonalApp.project.repository.ProjectGroupRepository;
 import koul.PersonalApp.project.repository.ProjectRepository;
+import koul.PersonalApp.user.entity.User;
+import koul.PersonalApp.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +26,12 @@ class ProjectServiceImplTest {
 
 	@Mock
 	private ProjectRepository projectRepository;
+
+	@Mock
+	private ProjectGroupRepository projectGroupRepository;
+
+	@Mock
+	private UserRepository userRepository;
 
 	@InjectMocks
 	private ProjectServiceImpl projectService;
@@ -99,9 +108,9 @@ class ProjectServiceImplTest {
 		// given
 		Long projectId = 1L;
 		Project rootProject = Project.builder()
-			.content("루트 프로젝트")
-			.prevProject(null) // 이전 프로젝트가 없으면 루트
-			.build();
+				.content("루트 프로젝트")
+				.prevProject(null) // 이전 프로젝트가 없으면 루트
+				.build();
 
 		given(projectRepository.findById(projectId)).willReturn(Optional.of(rootProject));
 
@@ -119,9 +128,9 @@ class ProjectServiceImplTest {
 		Long childId = 2L;
 		Project parentProject = new Project();
 		Project childProject = Project.builder()
-			.content("자식 프로젝트")
-			.prevProject(parentProject) // 부모가 연결된 상태
-			.build();
+				.content("자식 프로젝트")
+				.prevProject(parentProject) // 부모가 연결된 상태
+				.build();
 
 		given(projectRepository.findById(childId)).willReturn(Optional.of(childProject));
 
@@ -138,9 +147,9 @@ class ProjectServiceImplTest {
 		// given
 		Long projectId = 1L;
 		Project completedProject = Project.builder()
-			.content("완료된 업무")
-			.completeStatus(true) // 완료 상태 설정
-			.build();
+				.content("완료된 업무")
+				.completeStatus(true) // 완료 상태 설정
+				.build();
 
 		given(projectRepository.findById(projectId)).willReturn(Optional.of(completedProject));
 
@@ -155,22 +164,38 @@ class ProjectServiceImplTest {
 	@DisplayName("프로젝트 생성 - 정상 저장 후 ID 반환 확인")
 	void createProject_success() {
 		// given
-		ProjectGroup projectGroup = new ProjectGroup();
-		ProjectCreateCommand request = new ProjectCreateCommand("새 프로젝트", false, projectGroup);
-		Project project = request.toEntity();
+		Long userId = 1L;
+		Long groupId = 10L;
+		String content = "새 프로젝트";
 
-		// Reflection을 사용해 가짜 ID 주입 (실제 DB 저장 효과 시뮬레이션)
+		User user = User.builder().build(); // Assuming User has a proper builder or constructor
+		ProjectGroup projectGroup = new ProjectGroup();
+
+		// Mocking repositories
+		given(userRepository.findById(userId)).willReturn(Optional.of(user));
+		given(projectGroupRepository.findByProjectGroupIdAndUser_UserId(groupId, userId))
+				.willReturn(Optional.of(projectGroup));
+
+		ProjectCreateCommand command = ProjectCreateCommand.builder()
+				.userId(userId)
+				.projectGroupId(groupId)
+				.content(content)
+				.completeStatus(false)
+				.build();
+
 		Project savedProject = Project.builder()
-			.content(project.getContent())
-			.build();
-		// 실제 프로젝트 구조에 맞게 projectId가 저장된 객체가 반환된다고 가정
+				.content(content)
+				.projectGroup(projectGroup)
+				.user(user)
+				.build();
+
 		given(projectRepository.save(any(Project.class))).willReturn(savedProject);
 
 		// when
-		Long savedId = projectService.createProject(request);
+		projectService.createProject(command);
 
 		// then
-		// 리포지토리의 save가 호출되었는지와 반환된 ID가 일치하는지 확인
+		// 리포지토리의 save가 호출되었는지 확인
 		verify(projectRepository, times(1)).save(any(Project.class));
 	}
 
