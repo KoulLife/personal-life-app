@@ -7,6 +7,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
+
 import koul.PersonalApp.global.security.JwtTokenProvider;
 import koul.PersonalApp.user.dto.LoginRequest;
 import koul.PersonalApp.user.dto.SignupRequest;
@@ -102,5 +104,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다: " + userId));
         user.getActiveServices().remove(serviceType);
+    }
+
+    /**
+     * 사용자의 활성 서비스 목록 반환
+     */
+    @Override
+    public Set<ServiceType> getActiveServices(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다: " + userId));
+        return user.getActiveServices();
     }
 }
