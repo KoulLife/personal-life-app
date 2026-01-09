@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: personal-life-app
+  profiles:
+    active: dev
+
+  jackson:
+    time-zone: Asia/Seoul
+
+jwt:
+  secret: ${JWT_SECRET}
