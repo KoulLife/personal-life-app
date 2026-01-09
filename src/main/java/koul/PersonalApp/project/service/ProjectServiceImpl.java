@@ -26,12 +26,12 @@ public class ProjectServiceImpl implements ProjectService {
 	 */
 	@Override
 	@Transactional
-	public void connectProjects(Long currentProjectId, Long nextProjectId) {
-		Project currentProject = projectRepository.findById(currentProjectId)
-				.orElseThrow(() -> new IllegalArgumentException("해당 ID의 프로젝트가 존재하지 않습니다: " + currentProjectId));
+	public void connectProjects(Long userId, Long currentProjectId, Long nextProjectId) {
+		Project currentProject = projectRepository.findByProjectIdAndUser_UserId(currentProjectId, userId)
+				.orElseThrow(() -> new IllegalArgumentException("해당 ID의 프로젝트가 존재하지 않거나 권한이 없습니다: " + currentProjectId));
 
-		Project nextProject = projectRepository.findById(nextProjectId)
-				.orElseThrow(() -> new IllegalArgumentException("대상 ID의 프로젝트가 존재하지 않습니다: " + currentProjectId));
+		Project nextProject = projectRepository.findByProjectIdAndUser_UserId(nextProjectId, userId)
+				.orElseThrow(() -> new IllegalArgumentException("대상 ID의 프로젝트가 존재하지 않거나 권한이 없습니다: " + nextProjectId));
 		// 다음 프로젝트 연결
 		currentProject.connectToNextProject(nextProject);
 		// 이전 프로젝트 연결
@@ -129,13 +129,10 @@ public class ProjectServiceImpl implements ProjectService {
 	 */
 	@Override
 	@Transactional
-	public void deleteProject(Long projectId) {
-		try {
-			projectRepository.deleteById(projectId);
-		} catch (Exception e) {
-			throw new RuntimeException("해당 ID가 존재하지 않습니다.");
-		}
-
+	public void deleteProject(Long userId, Long projectId) {
+		Project project = projectRepository.findByProjectIdAndUser_UserId(projectId, userId)
+				.orElseThrow(() -> new IllegalArgumentException("해당 프로젝트를 찾을 수 없거나 접근 권한이 없습니다."));
+		projectRepository.delete(project);
 	}
 
 	/**
@@ -143,9 +140,9 @@ public class ProjectServiceImpl implements ProjectService {
 	 */
 	@Override
 	@Transactional
-	public void updateProject(Long projectId, String content) {
-		Project project = projectRepository.findById(projectId)
-				.orElseThrow(() -> new IllegalArgumentException("해당 ID의 프로젝트가 존재하지 않습니다: " + projectId));
+	public void updateProject(Long userId, Long projectId, String content) {
+		Project project = projectRepository.findByProjectIdAndUser_UserId(projectId, userId)
+				.orElseThrow(() -> new IllegalArgumentException("해당 프로젝트를 찾을 수 없거나 접근 권한이 없습니다."));
 
 		project.changeContent(content);
 	}
@@ -155,27 +152,24 @@ public class ProjectServiceImpl implements ProjectService {
 	 */
 	@Override
 	@Transactional
-	public void completeProject(Long projectId) {
-		Project project = projectRepository.findById(projectId)
-				.orElseThrow(() -> new IllegalArgumentException("해당 ID의 프로젝트가 존재하지 않습니다: " + projectId));
+	public void completeProject(Long userId, Long projectId) {
+		Project project = projectRepository.findByProjectIdAndUser_UserId(projectId, userId)
+				.orElseThrow(() -> new IllegalArgumentException("해당 프로젝트를 찾을 수 없거나 접근 권한이 없습니다."));
 
 		// 프로젝트 상태 완성으로 수정
 		project.changeCompleteStatus(true);
-
-		projectRepository.save(project);
 	}
 
 	/**
 	 * 프로젝트 완료 처리 철회
 	 */
 	@Override
-	public void undoCompleteProject(Long projectId) {
-		Project project = projectRepository.findById(projectId)
-				.orElseThrow(() -> new IllegalArgumentException("해당 ID의 프로젝트가 존재하지 않습니다: " + projectId));
+	@Transactional
+	public void undoCompleteProject(Long userId, Long projectId) {
+		Project project = projectRepository.findByProjectIdAndUser_UserId(projectId, userId)
+				.orElseThrow(() -> new IllegalArgumentException("해당 프로젝트를 찾을 수 없거나 접근 권한이 없습니다."));
 
 		// 프로젝트 상태 미완성으로 수정
 		project.changeCompleteStatus(false);
-
-		projectRepository.save(project);
 	}
 }

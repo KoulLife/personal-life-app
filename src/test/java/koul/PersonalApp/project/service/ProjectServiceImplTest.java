@@ -40,6 +40,7 @@ class ProjectServiceImplTest {
 	@DisplayName("성공: 두 프로젝트 연결 시 정상적으로 연결")
 	void connectProjects_succes() {
 		// given
+		Long userId = 1L;
 		Long currentId = 1L;
 		Long nextId = 2L;
 
@@ -47,11 +48,12 @@ class ProjectServiceImplTest {
 		Project nextProject = new Project();
 
 		// 리포지토리가 해당 ID를 찾으면 미리 만든 객체를 반환하도록 설정
-		given(projectRepository.findById(currentId)).willReturn(Optional.of(currentProject));
-		given(projectRepository.findById(nextId)).willReturn(Optional.of(nextProject));
+		given(projectRepository.findByProjectIdAndUser_UserId(currentId, userId))
+				.willReturn(Optional.of(currentProject));
+		given(projectRepository.findByProjectIdAndUser_UserId(nextId, userId)).willReturn(Optional.of(nextProject));
 
 		// when
-		projectService.connectProjects(currentId, nextId);
+		projectService.connectProjects(userId, currentId, nextId);
 
 		// then
 		// 현재 프로젝트의 다음 리스트에 대상 프로젝트가 포함되어 있는가?
@@ -66,40 +68,43 @@ class ProjectServiceImplTest {
 	@DisplayName("실패: 현재 프로젝트(Prev)가 없으면 예외가 발생해야 한다.")
 	void connectProjects_fail_current_not_found() {
 		// given
+		Long userId = 1L;
 		Long currentId = 999L; // 없는 ID
 		Long nextId = 2L;
 
 		// currentId를 찾으면 Empty를 반환
-		given(projectRepository.findById(currentId)).willReturn(Optional.empty());
+		given(projectRepository.findByProjectIdAndUser_UserId(currentId, userId)).willReturn(Optional.empty());
 
 		// when & then
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-			projectService.connectProjects(currentId, nextId);
+			projectService.connectProjects(userId, currentId, nextId);
 		});
 
 		// 에러 메시지도 확인
-		assertThat(exception.getMessage()).contains("해당 ID의 프로젝트가 존재하지 않습니다");
+		assertThat(exception.getMessage()).contains("해당 ID의 프로젝트가 존재하지 않거나 권한이 없습니다");
 	}
 
 	@Test
 	@DisplayName("실패: 대상 프로젝트(Next)가 없으면 예외가 발생해야 한다.")
 	void connectProjects_fail_next_not_found() {
 		// given
+		Long userId = 1L;
 		Long currentId = 1L;
 		Long nextId = 999L; // 없는 ID
 
 		Project currentProject = new Project();
 
 		// current는 찾았는데, next는 못 찾은 상황 시뮬레이션
-		given(projectRepository.findById(currentId)).willReturn(Optional.of(currentProject));
-		given(projectRepository.findById(nextId)).willReturn(Optional.empty());
+		given(projectRepository.findByProjectIdAndUser_UserId(currentId, userId))
+				.willReturn(Optional.of(currentProject));
+		given(projectRepository.findByProjectIdAndUser_UserId(nextId, userId)).willReturn(Optional.empty());
 
 		// when & then
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-			projectService.connectProjects(currentId, nextId);
+			projectService.connectProjects(userId, currentId, nextId);
 		});
 
-		assertThat(exception.getMessage()).contains("대상 ID의 프로젝트가 존재하지 않습니다");
+		assertThat(exception.getMessage()).contains("대상 ID의 프로젝트가 존재하지 않거나 권한이 없습니다");
 	}
 
 	@Test
@@ -205,64 +210,79 @@ class ProjectServiceImplTest {
 		// given
 		Long invalidId = 999L;
 		// deleteById는 반환값이 없으므로 doThrow로 예외 상황 설정
-		doThrow(new RuntimeException()).when(projectRepository).deleteById(invalidId);
+		doThrow(new RuntimeException("해당 ID가 존재하지 않습니다.")).when(projectRepository).deleteById(invalidId);
 
 		// when & then
 		RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-			projectService.deleteProject(invalidId);
+			projectService.deleteProject(1L, invalidId); // Assuming userId is 1L for this test
 		});
 
 		assertThat(exception.getMessage()).isEqualTo("해당 ID가 존재하지 않습니다.");
 	}
 
 	@Test
-	@DisplayName("프로젝트 내용 업데이트 - 변경 감지 동작 확인")
+	@DisplayName("프로젝트 삭제")
+	void deleteProject_success() {
+		// given
+		Long projectId = 1L;
+		Project project = Project.builder().content("삭제할 프로젝트").build();
+
+		when(projectRepository.findByProjectIdAndUser_UserId(projectId, 1L)).thenReturn(java.util.Optional.of(project));
+
+		// when
+		projectService.deleteProject(1L, projectId);
+
+		// then
+		verify(projectRepository, times(1)).delete(project);
+	}
+
+	@Test
+	@DisplayName("프로젝트 내용 수정")
 	void updateProject_success() {
 		// given
 		Long projectId = 1L;
 		String newContent = "수정된 내용";
 		Project project = Project.builder().content("기존 내용").build();
 
-		given(projectRepository.findById(projectId)).willReturn(Optional.of(project));
+		when(projectRepository.findByProjectIdAndUser_UserId(projectId, 1L)).thenReturn(java.util.Optional.of(project));
 
 		// when
-		projectService.updateProject(projectId, newContent);
+		projectService.updateProject(1L, projectId, newContent);
 
 		// then
-		// 엔티티의 필드값이 실제로 변경되었는지 확인
-		assertThat(project.getContent()).isEqualTo(newContent);
+		assertEquals(newContent, project.getContent());
 	}
 
 	@Test
-	@DisplayName("프로젝트 완료 처리 - 상태값이 true로 변경되는지 확인")
+	@DisplayName("프로젝트 완료 처리")
 	void completeProject_success() {
 		// given
 		Long projectId = 1L;
-		Project project = Project.builder().completeStatus(false).build();
+		Project project = Project.builder().content("테스트 프로젝트").completeStatus(false).build();
 
-		given(projectRepository.findById(projectId)).willReturn(Optional.of(project));
+		when(projectRepository.findByProjectIdAndUser_UserId(projectId, 1L)).thenReturn(java.util.Optional.of(project));
 
 		// when
-		projectService.completeProject(projectId);
+		projectService.completeProject(1L, projectId);
 
 		// then
-		assertThat(project.isCompleteStatus()).isTrue();
+		assertTrue(project.isCompleteStatus());
 	}
 
 	@Test
-	@DisplayName("프로젝트 완료 철회 - 상태값이 false로 변경되는지 확인")
+	@DisplayName("프로젝트 완료 처리 철회")
 	void undoCompleteProject_success() {
 		// given
 		Long projectId = 1L;
-		Project project = Project.builder().completeStatus(true).build();
+		Project project = Project.builder().content("테스트 프로젝트").completeStatus(true).build();
 
-		given(projectRepository.findById(projectId)).willReturn(Optional.of(project));
+		when(projectRepository.findByProjectIdAndUser_UserId(projectId, 1L)).thenReturn(java.util.Optional.of(project));
 
 		// when
-		projectService.undoCompleteProject(projectId);
+		projectService.undoCompleteProject(1L, projectId);
 
 		// then
-		assertThat(project.isCompleteStatus()).isFalse();
+		assertFalse(project.isCompleteStatus());
 	}
 
 }
