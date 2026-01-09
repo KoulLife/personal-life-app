@@ -40,20 +40,23 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http
-			// JWT를 사용하므로 stateless하며, CSRF 보호는 비활성화함
-			.csrf(csrf -> csrf.disable())
+				// JWT를 사용하므로 stateless하며, CSRF 보호는 비활성화함
+				.csrf(csrf -> csrf.disable())
 
-			// 세션을 생성하지 않고 stateless하게 관리
-			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				// CORS 설정 적용 (WebConfig의 설정을 따르거나 기본 설정 사용)
+				.cors(org.springframework.security.config.Customizer.withDefaults())
 
-			// URL 접근 권한 설정
-			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/auth/**").permitAll() // 로그인, 회원가입 관련 경로는 무조건 허용
-				.anyRequest().authenticated()            // 그 외 모든 요청은 인증 필요
-			)
+				// 세션을 생성하지 않고 stateless하게 관리
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-			// JWT 인증 필터를 표준 로그인 필터(UsernamePasswordAuthenticationFilter)보다 먼저 실행하도록 설정
-			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+				// URL 접근 권한 설정
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/auth/**").permitAll() // 로그인, 회원가입 관련 경로는 무조건 허용
+						.anyRequest().authenticated() // 그 외 모든 요청은 인증 필요
+				)
+
+				// JWT 인증 필터를 표준 로그인 필터(UsernamePasswordAuthenticationFilter)보다 먼저 실행하도록 설정
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}
