@@ -11,3 +11,12 @@ spring:
       hibernate:
         format_sql: true
         show_sql: true
+
+  ai:
+    google:
+      genai:
+        api-key: ${GEMINI_KEY}
+        chat:
+          options:
+            model: gemini-2.0-flash
+            temperature: 0.0

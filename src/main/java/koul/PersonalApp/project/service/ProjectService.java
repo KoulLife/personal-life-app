@@ -28,4 +28,7 @@ public interface ProjectService {
 	// 프로젝트 완료 철회
 	void undoCompleteProject(Long userId, Long projectId);
 
+	// 여러 개의 연결된 프로젝트 생성
+	java.util.List<Long> createLinkedProjects(Long userId, Long groupId, java.util.List<String> projectContents);
+
 }
