@@ -56,7 +56,7 @@ public class Project extends BaseTimeEntity {
 		this.content = content;
 		this.completeStatus = completeStatus;
 		this.prevProject = prevProject;
-		this.nextProjects = nextProjects;
+		this.nextProjects = nextProjects != null ? nextProjects : new ArrayList<>();
 		this.projectGroup = projectGroup;
 		this.projectTime = projectTime;
 		this.user = user;

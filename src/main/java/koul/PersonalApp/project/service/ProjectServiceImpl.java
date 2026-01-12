@@ -1,5 +1,8 @@
 package koul.PersonalApp.project.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -171,5 +174,32 @@ public class ProjectServiceImpl implements ProjectService {
 
 		// 프로젝트 상태 미완성으로 수정
 		project.changeCompleteStatus(false);
+	}
+
+	/**
+	 * 여러 개의 연결된 프로젝트 생성
+	 */
+	@Transactional
+	public List<Long> createLinkedProjects(Long userId, Long groupId, List<String> projectContents) {
+		List<Long> createdProjectIds = new ArrayList<>();
+		Long prevProjectId = null;
+
+		for (String content : projectContents) {
+			ProjectCreateCommand command = ProjectCreateCommand.builder()
+					.userId(userId)
+					.projectGroupId(groupId)
+					.prevProjectId(prevProjectId) // 이전 프로젝트와 연결 (첫 번째는 null)
+					.content(content)
+					.completeStatus(false)
+					.build();
+
+			// 프로젝트 생성
+			Long newProjectId = createProject(command);
+			createdProjectIds.add(newProjectId);
+
+			// 다음 루프를 위해 현재 프로젝트를 이전 프로젝트로 설정
+			prevProjectId = newProjectId;
+		}
+		return createdProjectIds;
 	}
 }
