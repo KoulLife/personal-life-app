@@ -24,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class FinancialServiceImpl implements FinancialService {
 
 	private final FinancialRepository financialRepository;
@@ -132,9 +131,20 @@ public class FinancialServiceImpl implements FinancialService {
 				.orElse("AI가 리포트를 생성 중입니다...");
 	}
 
+	/**
+	 * AI 리포트 주기적 작성
+	 * 배치 작업에서 호출되어 AI가 생성한 피드백을 저장
+	 */
 	@Override
+	@Transactional
 	public void upsertPeriodicAiReport(Long userId, String report) {
+		LocalDate now = LocalDate.now();
 
+		Financial financial = financialRepository.findByUserIdAndYearMonth(userId, now)
+				.orElseThrow(() -> new IllegalStateException("재정 데이터가 없습니다."));
+
+		financial.updateAiFeedback(report);
+		financialRepository.save(financial);
 	}
 
 	@Override
