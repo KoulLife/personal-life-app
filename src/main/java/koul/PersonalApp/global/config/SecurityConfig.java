@@ -52,6 +52,7 @@ public class SecurityConfig {
 				// URL 접근 권한 설정
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/auth/**").permitAll() // 로그인, 회원가입 관련 경로는 무조건 허용
+						.requestMatchers("/admin/batch/**").permitAll() // 배치 작업 테스트용 (개발 환경에서만 사용)
 						.anyRequest().authenticated() // 그 외 모든 요청은 인증 필요
 				)
 
