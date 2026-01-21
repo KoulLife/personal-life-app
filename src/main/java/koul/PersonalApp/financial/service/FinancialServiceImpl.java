@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import koul.PersonalApp.alert.notifier.AlertNotifier;
 import koul.PersonalApp.financial.dto.FinancialRecordCommand;
 import koul.PersonalApp.financial.dto.FinancialRecordInfo;
 import koul.PersonalApp.financial.dto.MonthlyFinancialInfo;
@@ -15,6 +16,7 @@ import koul.PersonalApp.financial.entity.Financial;
 import koul.PersonalApp.financial.entity.FinancialRecord;
 import koul.PersonalApp.financial.repository.FinancialRecordRepository;
 import koul.PersonalApp.financial.repository.FinancialRepository;
+import koul.PersonalApp.user.entity.ServiceType;
 import koul.PersonalApp.user.entity.User;
 import koul.PersonalApp.user.repository.UserRepository;
 
@@ -29,6 +31,10 @@ public class FinancialServiceImpl implements FinancialService {
 	private final FinancialRepository financialRepository;
 	private final FinancialRecordRepository financialRecordRepository;
 	private final UserRepository userRepository;
+	private final AlertNotifier alertNotifier;
+
+	// 큰 지출로 판단할 임계값 (100만원)
+	private static final Long LARGE_EXPENSE_THRESHOLD = 1_000_000L;
 
 	/**
 	 * 금융 대시보드 요약 정보 조회
@@ -93,6 +99,13 @@ public class FinancialServiceImpl implements FinancialService {
 				.build();
 
 		financial.getFinancialRecords().add(record);
+
+		// 큰 지출이 발생하면 알림 전송
+		if (command.amount() >= LARGE_EXPENSE_THRESHOLD) {
+			String message = String.format("큰 지출이 발생했습니다: %s - %,d원", 
+					command.description(), command.amount());
+			alertNotifier.notifyUser(userId, ServiceType.FINANCIAL_MANAGER, "LARGE_EXPENSE", message);
+		}
 	}
 
 	@Override
