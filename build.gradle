@@ -47,6 +47,9 @@ dependencies {
 	// Spring Batch (AI 피드백 주기적 생성)
 	implementation 'org.springframework.boot:spring-boot-starter-batch'
 
+	// Gmail SMTP
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

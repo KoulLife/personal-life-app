@@ -6,11 +6,13 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import koul.PersonalApp.alert.notifier.AlertNotifier;
 import koul.PersonalApp.project.Entity.Project;
 import koul.PersonalApp.project.Entity.ProjectGroup;
 import koul.PersonalApp.project.dto.ProjectCreateCommand;
 import koul.PersonalApp.project.repository.ProjectGroupRepository;
 import koul.PersonalApp.project.repository.ProjectRepository;
+import koul.PersonalApp.user.entity.ServiceType;
 import koul.PersonalApp.user.entity.User;
 import koul.PersonalApp.user.repository.UserRepository;
 
@@ -23,6 +25,7 @@ public class ProjectServiceImpl implements ProjectService {
 	private final ProjectRepository projectRepository;
 	private final ProjectGroupRepository projectGroupRepository;
 	private final UserRepository userRepository;
+	private final AlertNotifier alertNotifier;
 
 	/**
 	 * 프로젝트 관계 연결
@@ -161,6 +164,10 @@ public class ProjectServiceImpl implements ProjectService {
 
 		// 프로젝트 상태 완성으로 수정
 		project.changeCompleteStatus(true);
+
+		// 알림 전송
+		String message = String.format("프로젝트가 완료되었습니다: %s", project.getContent());
+		alertNotifier.notifyUser(userId, ServiceType.PROJECT_MANAGER, "PROJECT_COMPLETED", message);
 	}
 
 	/**
