@@ -40,7 +40,17 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
-	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	// AI 설정
+	implementation 'org.springframework.ai:spring-ai-starter-mcp-client:1.1.0'
+	implementation 'org.springframework.ai:spring-ai-starter-model-google-genai:1.1.0'
+
+	// Spring Batch (AI 피드백 주기적 생성)
+	implementation 'org.springframework.boot:spring-boot-starter-batch'
+
+	// Gmail SMTP
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

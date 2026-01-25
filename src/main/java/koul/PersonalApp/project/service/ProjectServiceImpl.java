@@ -1,13 +1,18 @@
 package koul.PersonalApp.project.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import koul.PersonalApp.alert.notifier.AlertNotifier;
 import koul.PersonalApp.project.Entity.Project;
 import koul.PersonalApp.project.Entity.ProjectGroup;
 import koul.PersonalApp.project.dto.ProjectCreateCommand;
 import koul.PersonalApp.project.repository.ProjectGroupRepository;
 import koul.PersonalApp.project.repository.ProjectRepository;
+import koul.PersonalApp.user.entity.ServiceType;
 import koul.PersonalApp.user.entity.User;
 import koul.PersonalApp.user.repository.UserRepository;
 
@@ -20,6 +25,7 @@ public class ProjectServiceImpl implements ProjectService {
 	private final ProjectRepository projectRepository;
 	private final ProjectGroupRepository projectGroupRepository;
 	private final UserRepository userRepository;
+	private final AlertNotifier alertNotifier;
 
 	/**
 	 * 프로젝트 관계 연결
@@ -158,6 +164,10 @@ public class ProjectServiceImpl implements ProjectService {
 
 		// 프로젝트 상태 완성으로 수정
 		project.changeCompleteStatus(true);
+
+		// 알림 전송
+		String message = String.format("프로젝트가 완료되었습니다: %s", project.getContent());
+		alertNotifier.notifyUser(userId, ServiceType.PROJECT_MANAGER, "PROJECT_COMPLETED", message);
 	}
 
 	/**
@@ -171,5 +181,32 @@ public class ProjectServiceImpl implements ProjectService {
 
 		// 프로젝트 상태 미완성으로 수정
 		project.changeCompleteStatus(false);
+	}
+
+	/**
+	 * 여러 개의 연결된 프로젝트 생성
+	 */
+	@Transactional
+	public List<Long> createLinkedProjects(Long userId, Long groupId, List<String> projectContents) {
+		List<Long> createdProjectIds = new ArrayList<>();
+		Long prevProjectId = null;
+
+		for (String content : projectContents) {
+			ProjectCreateCommand command = ProjectCreateCommand.builder()
+					.userId(userId)
+					.projectGroupId(groupId)
+					.prevProjectId(prevProjectId) // 이전 프로젝트와 연결 (첫 번째는 null)
+					.content(content)
+					.completeStatus(false)
+					.build();
+
+			// 프로젝트 생성
+			Long newProjectId = createProject(command);
+			createdProjectIds.add(newProjectId);
+
+			// 다음 루프를 위해 현재 프로젝트를 이전 프로젝트로 설정
+			prevProjectId = newProjectId;
+		}
+		return createdProjectIds;
 	}
 }

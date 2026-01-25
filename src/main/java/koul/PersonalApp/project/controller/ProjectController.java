@@ -34,7 +34,7 @@ public class ProjectController {
                 .projectGroupId(request.projectGroupId())
                 .prevProjectId(request.prevProjectId())
                 .content(request.content())
-                .completeStatus(false) // 기본값 false
+                .completeStatus(false)
                 .build();
 
         projectService.createProject(command);
